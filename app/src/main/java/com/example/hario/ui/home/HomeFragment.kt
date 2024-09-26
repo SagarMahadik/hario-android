@@ -18,12 +18,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import com.example.shared.db.AppDatabase
+import com.example.shared.db.DbManager
+import com.example.shared.db.MutationPayload
+import com.example.shared.db.daos.PartialBookmarkEntity
+import com.example.shared.db.repository.BookmarkRepository
 import com.example.shared.model.Bookmarks
 import com.example.shared.state.ActionHandler
-import com.example.shared.state.ActionType
 import com.example.shared.state.AppStore
 import com.example.shared.state.AppAction
-import com.example.shared.state.ItemType
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.reduxkotlin.StoreSubscriber
 
 class HomeFragment : Fragment() {
@@ -31,7 +37,18 @@ class HomeFragment : Fragment() {
     private val store = AppStore.store
     private var unsubscribe: StoreSubscriber? = null
 
-    val actionHandler = ActionHandler()
+    private lateinit var bookmarkRepository: BookmarkRepository
+    private lateinit var actionHandler: ActionHandler
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val database = AppDatabase.getInstance(requireContext())
+        actionHandler = ActionHandler()
+
+        val bookmarkDao = database.bookmarkDao()
+        bookmarkRepository = BookmarkRepository(bookmarkDao)
+    }
+
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -62,6 +79,7 @@ class HomeFragment : Fragment() {
             unsubscribe = store.subscribe {
                 appState.value = store.state
             }
+            observeBookmarks()
         }
 
         // Unsubscribe when the composable is disposed
@@ -70,6 +88,9 @@ class HomeFragment : Fragment() {
                 unsubscribe?.invoke()
             }
         }
+
+        val scope = rememberCoroutineScope()
+
         // UI Components
         Scaffold(
             topBar = {
@@ -79,8 +100,12 @@ class HomeFragment : Fragment() {
                 BookmarkList(
                     bookmarks = appState.value.bookmarks,
                     onAddBookmark = { addBookmark() },
-                    onUpdateBookmark = {updateBookmark()},
-                    paddingValues=paddingValues
+                    onUpdateBookmark = {  ->
+                        scope.launch {
+                            updateBookmark()
+                        }
+                    },
+                    paddingValues =paddingValues
                 )
             }
         )
@@ -90,7 +115,7 @@ class HomeFragment : Fragment() {
     fun BookmarkList(
         bookmarks: List<Bookmarks>,
         onAddBookmark: () -> Unit,
-        onUpdateBookmark:() -> Unit,
+        onUpdateBookmark: () -> Unit,
         paddingValues: PaddingValues
     ) {
         Column(
@@ -115,6 +140,21 @@ class HomeFragment : Fragment() {
     }
 
 
+    private fun loadBookmarks() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val bookmarks = bookmarkRepository.getAllBookmarks()
+            store.dispatch(AppAction.SetBookmarks(bookmarks))
+        }
+    }
+
+    private fun observeBookmarks() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            bookmarkRepository.getAllBookmarksFlow().collectLatest { bookmarks ->
+                store.dispatch(AppAction.SetBookmarks(bookmarks))
+            }
+        }
+    }
+
     private fun addBookmark() {
         // Create a new bookmark (in a real app, you'd get this data from user input)
         val newBookmark = Bookmarks(
@@ -128,17 +168,19 @@ class HomeFragment : Fragment() {
         store.dispatch(AppAction.UpdateBookmark(title = "Updated Bookmark", index = 1))
     }
 
-    private fun updateBookmark() {
-        // Create a new bookmark (in a real app, you'd get this data from user input)
-        //store.dispatch(AppAction.UpdateBookmark(title = "Updated Bookmark", index = 1))
-        store.dispatch(AppAction.UpdateItem(index = 1, itemId = "1", itemType = ItemType.BOOKMARK,  data=mapOf("title" to "sgrmhdk") ))
-        val payload = mapOf(
-            "index" to 1,
-            "_id" to "bookmark1",
-            "itemType" to ItemType.BOOKMARK,
-            "value" to true
+    private suspend fun updateBookmark() {
+
+        val payload = MutationPayload(
+            operation = "add",
+            collection = "bookmarks",
+            data = mapOf(
+                "_id" to "12",
+                "title" to "sgrmhdk12",
+                "url" to "https://example.com",
+                "isFavorite" to false
+            )
         )
 
-        actionHandler.handleAction(ActionType.setFavorite, payload)
+        actionHandler.mutate(payload)
     }
 }

@@ -9,6 +9,7 @@ val appReducer: Reducer<AppState> = { state, action ->
             isLoading = false,
             bookmarks = action.bookmarks
         )
+        is AppAction.SetBookmarks -> state.copy(bookmarks = action.bookmarks)
         is AppAction.AddBookmark -> state.copy(
             bookmarks = state.bookmarks + action.bookmark
         )

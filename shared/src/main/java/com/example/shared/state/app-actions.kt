@@ -4,6 +4,7 @@ import com.example.shared.model.Bookmarks
 
 sealed class AppAction {
     data object LoadBookmarks : AppAction()
+    data class SetBookmarks(val bookmarks: List<Bookmarks>) : AppAction()
     data class BookmarksLoaded(val bookmarks: List<Bookmarks>) : AppAction()
     data class AddBookmark(val bookmark: Bookmarks) : AppAction()
     data class RemoveBookmark(val bookmarkId: String) : AppAction()

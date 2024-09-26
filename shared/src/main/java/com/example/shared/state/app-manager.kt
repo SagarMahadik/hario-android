@@ -1,5 +1,8 @@
 package com.example.shared.state
 
+import com.example.shared.db.AppDatabase
+import com.example.shared.db.DbManager
+import com.example.shared.db.MutationPayload
 import com.example.shared.state.AppStore.store
 
 enum class ActionType {
@@ -7,12 +10,23 @@ enum class ActionType {
     // Add more actions as needed
 }
 
-class ActionHandler {
-
+class ActionHandler() {
+    private val dbManager: DbManager = DbManager.getInstance()
     fun handleAction(action: ActionType, payload: Any) {
         when (action) {
             ActionType.setFavorite -> setFavorite(payload)
             // Add more actions as needed
+        }
+    }
+
+     suspend fun mutate(payload: MutationPayload) {
+        try {
+            dbManager.mutate(payload)
+            // Optionally dispatch a success action
+            // store.dispatch(AppAction.MutationSuccess(payload))
+        } catch (e: Exception) {
+            // Dispatch an error action
+            store.dispatch(AppAction.ErrorOccurred("Database mutation failed: ${e.message}"))
         }
     }
 
