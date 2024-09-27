@@ -56,7 +56,7 @@ object AuthManager {
         }
     }
 
-    suspend fun startUpSequence() {
+    suspend fun startUpSequence(payload: Any) {
         Log.d("Debug", "startUpSequence called")
         val result = apiManager.getUser()
         when (result) {

@@ -31,15 +31,14 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.example.shared.db.AppDatabase
-import com.example.shared.db.DbManager
 import com.example.shared.db.MutationPayload
-import com.example.shared.db.daos.PartialBookmarkEntity
 import com.example.shared.db.repository.BookmarkRepository
 import com.example.shared.model.Bookmarks
 import com.example.shared.state.AppStore
 import com.example.shared.state.AppAction
 import com.example.shared.state.ActionType
 import com.example.shared.state.AppManager
+import com.example.shared.state.managers.AuthManager
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.reduxkotlin.StoreSubscriber
@@ -92,7 +91,7 @@ class HomeFragment : Fragment() {
                 appState.value = store.state
             }
             observeBookmarks()
-            appManager.startUpSequence()
+            appManager.handleAction(ActionType.StartUpSequence,"")
         }
 
         // Unsubscribe when the composable is disposed
@@ -197,9 +196,9 @@ class HomeFragment : Fragment() {
                 onClick = {
                     coroutineScope.launch {
                         // Create a LoginPayload object from the email string
-                        val loginPayload = AppManager.InitiateEmailLoginPayload(email)
+                        val loginPayload = AuthManager.InitiateEmailLoginPayload(email)
                         // Pass this payload to the handleAction method
-                        appManager.handleAction(ActionType.initiateEmailBasedLogin, loginPayload)
+                        appManager.handleAction(ActionType.InitiateEmailBasedLogin, loginPayload)
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -214,8 +213,8 @@ class HomeFragment : Fragment() {
             Button(
                 onClick = {
                     coroutineScope.launch {
-                      val verifyEmailLoginPayload = AppManager.VerifyEmailLoginPayload(email, token)
-                        appManager.handleAction(ActionType.verifyEmailBasedLogin, verifyEmailLoginPayload)
+                      val verifyEmailLoginPayload = AuthManager.VerifyEmailLoginPayload(email, token)
+                        appManager.handleAction(ActionType.VerifyEmailBasedLogin, verifyEmailLoginPayload)
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
@@ -266,6 +265,6 @@ class HomeFragment : Fragment() {
             )
         )
 
-        appManager.mutate(payload)
+//        appManager.mutate(payload)
     }
 }
