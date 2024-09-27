@@ -1,6 +1,7 @@
 package com.example.hario
 
 import android.app.Application
+import com.example.shared.api.SessionManager
 import com.example.shared.db.DbManager
 
 class MyApp : Application() {
@@ -8,5 +9,7 @@ class MyApp : Application() {
         super.onCreate()
         // Initialize DbManager with the application context
         DbManager.initialize(this)
+
+        SessionManager.initialize(this)
     }
 }

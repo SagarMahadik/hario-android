@@ -16,6 +16,8 @@ sealed class AppAction {
         val data : Map<String,Any>,
         val itemType: ItemType
     ) : AppAction()
+    object LoginRequired : AppAction()
+    object LoginSuccess : AppAction()
 }
 
 enum class ItemType {

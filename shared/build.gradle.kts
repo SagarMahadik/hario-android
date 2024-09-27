@@ -37,6 +37,12 @@ android {
 dependencies {
     //noinspection UseTomlInstead
     api("org.reduxkotlin:redux-kotlin-threadsafe-jvm:0.6.0")
+    api("com.squareup.retrofit2:retrofit:2.9.0")
+    api("com.squareup.okhttp3:okhttp:4.9.1")
+    api("com.squareup.retrofit2:converter-gson:2.9.0")
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.2")
+    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
+    api("androidx.security:security-crypto:1.1.0-alpha03")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

@@ -5,21 +5,37 @@ import org.reduxkotlin.Reducer
 val appReducer: Reducer<AppState> = { state, action ->
     when (action) {
         is AppAction.LoadBookmarks -> state.copy(isLoading = true)
+
         is AppAction.BookmarksLoaded -> state.copy(
             isLoading = false,
             bookmarks = action.bookmarks
         )
+
         is AppAction.SetBookmarks -> state.copy(bookmarks = action.bookmarks)
+
         is AppAction.AddBookmark -> state.copy(
             bookmarks = state.bookmarks + action.bookmark
         )
+
         is AppAction.RemoveBookmark -> state.copy(
             bookmarks = state.bookmarks.filterNot { it._id == action.bookmarkId }
         )
+
         is AppAction.ErrorOccurred -> state.copy(
             isLoading = false,
             errorMessage = action.message
         )
+
+        is AppAction.LoginRequired -> {
+            state.copy(auth = state.auth.copy(loginRequired = true))
+        }
+
+        is AppAction.LoginSuccess -> {
+            state.copy(auth = state.auth.copy(loginRequired = false,
+                isAuthenticated = true
+            ))
+        }
+
         is AppAction.UpdateBookmark -> {
             val updatedBookmarks = state.bookmarks.mapIndexed { idx, bookmark ->
                 if (idx == action.index) {
