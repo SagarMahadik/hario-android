@@ -1,18 +1,17 @@
 package com.example.shared.api
-// ApiClient.kt
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
-import org.reduxkotlin.BuildConfig
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 
-// ApiClient.kt
 object ApiClient {
     var sessionId: String? = null
 
     private val okHttpClient: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(SessionInterceptor())
+        .readTimeout(0, TimeUnit.MILLISECONDS)
         .build()
 
     val apiService: ApiService = Retrofit.Builder()

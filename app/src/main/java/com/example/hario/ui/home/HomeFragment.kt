@@ -21,6 +21,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +36,7 @@ import com.example.shared.db.AppDatabase
 import com.example.shared.db.MutationPayload
 import com.example.shared.db.repository.BookmarkRepository
 import com.example.shared.model.Bookmarks
+import com.example.shared.model.Collection
 import com.example.shared.state.AppStore
 import com.example.shared.state.AppAction
 import com.example.shared.state.ActionType
@@ -106,17 +109,15 @@ class HomeFragment : Fragment() {
         // UI Components
         Scaffold(
             topBar = {
-                TopAppBar(title = { Text("Bookmarks") })
+                TopAppBar(title = { Text("Collections") })
             },
             content = { paddingValues ->
                 if (appState.value.auth.loginRequired) {
                     LoginScreen(
                     )
                 } else {
-                    BookmarkList(
-                        bookmarks = appState.value.bookmarks,
-                        onAddBookmark = { /* Add Bookmark Logic */ },
-                        onUpdateBookmark = { /* Update Bookmark Logic */ },
+                    CollectionList(
+                        collections = appState.value.collections,
                         paddingValues = paddingValues
                     )
                 }
@@ -151,6 +152,26 @@ class HomeFragment : Fragment() {
             }
         }
     }
+
+    @Composable
+    fun CollectionList(
+        collections: List<Collection>,
+        paddingValues: PaddingValues
+    ) {
+        Column(
+            modifier = Modifier.padding(paddingValues)
+        ) {
+            // Display the list of collections
+            collections.forEach { collection ->
+                Text(text = "Name: ${collection.name}")
+                Text(text = "Parent: ${collection.parent}")
+                Text(text = "Updated At: ${collection.updatedAt}")
+                Text(text = "Is Favorite: ${collection.isFavorite ?: false}")
+                HorizontalDivider() // Add a divider between collections for better readability
+            }
+        }
+    }
+
 
     @SuppressLint("SuspiciousIndentation")
     @Composable

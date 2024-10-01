@@ -1,19 +1,18 @@
 package com.example.shared.model
 
-data class Bookmarks(
+data class Highlight(
     val _id: String,
-    val title: String,
-    val url: String,
+    val bookmarkId: String,
     val isFavorite: Boolean,
+    val isSticky: Boolean = false,
+    val color: String = "",
     val tags: List<String> = emptyList()
-) : UpdatableItem<Bookmarks> {
+) : UpdatableItem<Highlight> {
 
-    override fun update(data: Map<String, Any>): Bookmarks {
+    override fun update(data: Map<String, Any>): Highlight {
         var updated = this
         data.forEach { (key, value) ->
             updated = when (key) {
-                "title" -> updated.copy(title = value as String)
-                "url" -> updated.copy(url = value as String)
                 "isFavorite" -> updated.copy(isFavorite = value as Boolean)
                 else -> updated
             }

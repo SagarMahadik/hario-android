@@ -13,6 +13,10 @@ val appReducer: Reducer<AppState> = { state, action ->
 
         is AppAction.SetBookmarks -> state.copy(bookmarks = action.bookmarks)
 
+        is AppAction.SetCollections -> state.copy(collections = action.collections)
+
+        is AppAction.SetTags -> state.copy(tags = action.tags)
+
         is AppAction.AddBookmark -> state.copy(
             bookmarks = state.bookmarks + action.bookmark
         )

@@ -6,6 +6,8 @@ import com.example.shared.db.entity.BookmarkEntity
 import com.example.shared.model.Bookmarks
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import com.example.shared.db.StringListConverter
+import com.example.shared.db.refs.BookmarkTagRef
 
 class BookmarkRepository(private val bookmarkDao: BookmarkDao) {
     suspend fun getAllBookmarks(): List<Bookmarks> {
@@ -20,14 +22,18 @@ class BookmarkRepository(private val bookmarkDao: BookmarkDao) {
 
     suspend fun insertBookmarks(bookmarks: List<Bookmarks>) {
         bookmarkDao.insertBookmarks(bookmarks.map { it.toBookmarkEntity() })
+        bookmarks.forEach { bookmark ->
+            val tagRefs = bookmark.tags.map { BookmarkTagRef(bookmark._id, it) }
+            bookmarkDao.insertBookmarkTagRefs(tagRefs)
+        }
     }
 
     private fun BookmarkEntity.toBookmark(): Bookmarks {
-        return Bookmarks(_id, title, url, isFavorite)
+        return Bookmarks(_id, title, url, isFavorite, StringListConverter().fromString(tags))
     }
 
     private fun Bookmarks.toBookmarkEntity(): BookmarkEntity {
-        return BookmarkEntity(_id, title, url, isFavorite)
+        return BookmarkEntity(_id, title, url, isFavorite, StringListConverter().fromList(tags))
     }
 
     suspend fun updateBookmarkById(id: String, updatedBookmark: PartialBookmarkEntity) {
@@ -44,5 +50,4 @@ class BookmarkRepository(private val bookmarkDao: BookmarkDao) {
             throw NoSuchElementException("Bookmark with id $id not found")
         }
     }
-
 }

@@ -2,16 +2,16 @@ package com.example.shared.model
 
 import java.util.Date
 
-data class Collection(
+data class Tag(
     val _id: String,
     val name: String,
     val parent: String,
     val updatedAt: Date?,
     val userId: String,
     val isFavorite: Boolean?,
-) : UpdatableItem<Collection> {
+) : UpdatableItem<Tag> {
 
-    override fun update(data: Map<String, Any>): Collection {
+    override fun update(data: Map<String, Any>): Tag {
         var updated = this
         data.forEach { (key, value) ->
             updated = when (key) {
