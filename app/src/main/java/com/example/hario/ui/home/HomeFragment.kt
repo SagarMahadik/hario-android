@@ -13,8 +13,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -28,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
@@ -41,10 +48,15 @@ import com.example.shared.state.AppStore
 import com.example.shared.state.AppAction
 import com.example.shared.state.ActionType
 import com.example.shared.state.AppManager
+import com.example.shared.state.ItemType
 import com.example.shared.state.managers.AuthManager
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.reduxkotlin.StoreSubscriber
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class HomeFragment : Fragment() {
 
@@ -153,25 +165,88 @@ class HomeFragment : Fragment() {
         }
     }
 
-    @Composable
-    fun CollectionList(
-        collections: List<Collection>,
-        paddingValues: PaddingValues
+@Composable
+fun CollectionList(
+    collections: List<Collection>,
+    paddingValues: PaddingValues,
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        itemsIndexed(collections) { index,collection ->
+            CollectionCard(
+                collection = collection,
+                index=index
+//                onFavoriteToggle = print("toggled")
+            )
+        }
+    }
+}
+
+@Composable
+fun CollectionCard(
+    collection: Collection,
+    index:Int
+) {
+    val appManager = AppManager()
+    val coroutineScope = rememberCoroutineScope()
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.padding(paddingValues)
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
         ) {
-            // Display the list of collections
-            collections.forEach { collection ->
-                Text(text = "Name: ${collection.name}")
-                Text(text = "Parent: ${collection.parent}")
-                Text(text = "Updated At: ${collection.updatedAt}")
-                Text(text = "Is Favorite: ${collection.isFavorite ?: false}")
-                HorizontalDivider() // Add a divider between collections for better readability
+            Text(
+                text = collection.name,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Parent: ${collection.parent ?: "None"}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Updated: ${collection.updatedAt?.let { formatDate(it) }}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        val newFavoriteState = !(collection.isFavorite ?: false)
+                        val payload = mapOf(
+                            "index" to index,
+                            "_id" to collection._id,
+                            "itemType" to ItemType.COLLECTION,
+                            "value" to newFavoriteState
+                        )
+                        appManager.handleAction(ActionType.setFavorite, payload)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (collection.isFavorite == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+                )
+            ) {
+                Text(if (collection.isFavorite == true) "Favorited" else "Add to Favorites")
             }
         }
     }
+}
 
+fun formatDate(date: Date): String {
+    val formatter = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
+    return formatter.format(date)
+}
 
     @SuppressLint("SuspiciousIndentation")
     @Composable

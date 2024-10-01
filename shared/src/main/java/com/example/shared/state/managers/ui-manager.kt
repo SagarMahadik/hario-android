@@ -1,9 +1,11 @@
 package com.example.shared.state.managers
 
+import android.util.Log
 import com.example.shared.db.MutationPayload
 import com.example.shared.state.AppAction
 import com.example.shared.state.AppStore
 import com.example.shared.state.ItemType
+import com.example.shared.state.mapItemTypeToString
 import kotlinx.coroutines.runBlocking
 
 object UiManager {
@@ -17,28 +19,26 @@ object UiManager {
             val value = payload["value"] as? Boolean
 
             if (index != null && itemId != null && itemType != null && value != null) {
-                val dataToUpdate = mapOf("isFavorite" to value)
-
-                // Create a MutationPayload
-                val payload = MutationPayload(
-                    operation = "add",
-                    collection = "bookmarks",
-                    data = mapOf(
-                        "_id" to "12",
-                        "title" to "sgrmhdk12",
-                        "url" to "https://example.com",
-                        "isFavorite" to false
-                    )
+                val dataToUpdate = mapOf(
+                    "_id" to itemId,
+                    "isFavorite" to value
                 )
 
-                // Use dataManager.mutate
+                AppStore.store.dispatch(AppAction.UpdateItem(index, itemId, dataToUpdate, itemType))
+
                 runBlocking {
                     try {
-                        dataManager.mutate(payload)
-                        // Optionally dispatch a success action
-                        // AppStore.store.dispatch(AppAction.MutationSuccess(mutationPayload))
+                        dataManager.mutate(
+                            MutationPayload(
+                                "update",
+                                "",
+                                mapItemTypeToString(itemType),
+                                dataToUpdate
+                            )
+                        )
                     } catch (e: Exception) {
-                        AppStore.store.dispatch(AppAction.ErrorOccurred("Mutation failed: ${e.message}"))
+                        Log.e("set_fav_error", "Error in setFavorite: ${e.message}", e)
+                        AppStore.store.dispatch(AppAction.ErrorOccurred("Failed to set favorite: ${e.message}"))
                     }
                 }
             } else {

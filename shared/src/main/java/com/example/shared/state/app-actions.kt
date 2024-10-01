@@ -28,3 +28,10 @@ enum class ItemType {
     BOOKMARK,
     COLLECTION
 }
+fun mapItemTypeToString(itemType: ItemType): String {
+        return when (itemType) {
+            ItemType.BOOKMARK -> "bookmarks"
+            ItemType.COLLECTION -> "collections"
+        }
+    
+}
