@@ -1,29 +1,20 @@
 package com.example.hario
-import com.example.shared.SharedVariables
-import com.example.hario.BuildConfig
 
 import android.os.Bundle
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.hario.databinding.ActivityMainBinding
 import com.example.shared.ConfigHandler
-import com.example.shared.db.AppDatabase
-import com.example.shared.db.DbManager
-import com.example.shared.db.repository.BookmarkRepository
-import com.example.shared.model.Bookmarks
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import com.example.shared.SharedVariables
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var bookmarkRepository: BookmarkRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,20 +27,12 @@ class MainActivity : AppCompatActivity() {
         println("API Endpoint: ${ConfigHandler.API_ENDPOINT}")
         println("Environment: ${ConfigHandler.ENVIRONMENT}")
 
-        println(SharedVariables.STATIC_VARIABLE)
-
         // Access and modify the mutable variable
-        println("Mobile App - Before: ${SharedVariables.mutableVariable}")
         SharedVariables.mutableVariable = "Updated from Mobile App"
-        println("Mobile App - After: ${SharedVariables.mutableVariable}")
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-         bookmarkRepository = DbManager.getInstance().bookmarkRepository
-
-        // Load sample data
-        loadSampleData()
 
         val navView: BottomNavigationView = binding.navView
 
@@ -63,23 +46,5 @@ class MainActivity : AppCompatActivity() {
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
-    }
-
-    private fun loadSampleData() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            val sampleBookmarks = generateSampleBookmarks()
-            bookmarkRepository.insertBookmarks(sampleBookmarks)
-            println("Sample data loaded successfully")
-        }
-    }
-
-    private fun generateSampleBookmarks(): List<Bookmarks> {
-        return listOf(
-            Bookmarks("1", "Google", "https://www.google.com", false),
-            Bookmarks("2", "GitHub", "https://github.com", true),
-            Bookmarks("3", "Stack Overflow", "https://stackoverflow.com", false),
-            Bookmarks("4", "Kotlin Official", "https://kotlinlang.org", true),
-            Bookmarks("5", "Android Developers", "https://developer.android.com", false)
-        )
     }
 }

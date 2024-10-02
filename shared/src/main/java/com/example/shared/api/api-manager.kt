@@ -8,6 +8,8 @@ import com.example.shared.model.Highlight
 import com.example.shared.db.DbManager
 import com.example.shared.db.toMap
 import com.example.shared.db.MutationPayload
+import com.example.shared.model.Settings
+import com.example.shared.model.User
 import com.google.gson.annotations.SerializedName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -169,12 +171,24 @@ class ApiManager private constructor() {
             }
         }
 
-    sealed class GetUserResult<out T> {
-        data class Success<out T>(val data: T) : GetUserResult<T>()
-        data class Error(val exception: Exception) : GetUserResult<Nothing>()
+    data class GetUserResponse(
+        val error: String?,
+        val data: UserData?,
+        val status: String?
+    )
+
+    data class UserData(
+        val profile: User,
+        val settings: Settings,
+        val syncId: Double
+    )
+
+    sealed class GetUserResult {
+        data class Success(val data: GetUserResponse) : GetUserResult()
+        data class Error(val exception: Exception) : GetUserResult()
     }
 
-    suspend fun getUser(): GetUserResult<ApiResponse> = withContext(Dispatchers.IO) {
+    suspend fun getUser(): GetUserResult = withContext(Dispatchers.IO) {
         Log.d("Debug", "getUser function called")
         val response = apiService.getUser()
         if (response.isSuccessful) {

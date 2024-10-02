@@ -11,7 +11,9 @@ import com.example.shared.db.repository.TagRepository
 import com.example.shared.db.repository.toPartialCollectionEntity
 import com.example.shared.model.Bookmarks
 import com.example.shared.model.Collection
+import com.example.shared.model.Settings
 import com.example.shared.model.Tag
+import com.example.shared.model.User
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
@@ -29,12 +31,12 @@ data class MutationPayload(
 class DbManager private constructor(context: Context) {
     private val database: AppDatabase
     private val gson = Gson()
+    private val realmDbManager = RealmDbManager()
 
     val bookmarkRepository: BookmarkRepository
     val highlightRepository: HighlightRepository
     val collectionRepository: CollectionRepository
     val tagRepository: TagRepository
-
 
     init {
         database = AppDatabase.getInstance(context.applicationContext)
@@ -49,6 +51,8 @@ class DbManager private constructor(context: Context) {
 
         val highlightsDao = database.highlightDao()
         highlightRepository = HighlightRepository(highlightsDao)
+
+        RealmDbInitializer.initialize()
     }
 
     companion object {
@@ -70,6 +74,18 @@ class DbManager private constructor(context: Context) {
                 ?: throw IllegalStateException("DbManager must be initialized in Application class before use.")
         }
     }
+
+    fun saveSettings(settings: Settings) = realmDbManager.saveSettings(settings)
+
+    fun getSettings(): Flow<Settings?> = realmDbManager.getSettingsFlow()
+
+    fun saveUser(user: User) = realmDbManager.saveUser(user)
+
+    fun getUser(): Flow<User?> = realmDbManager.getUserFlow()
+
+    fun getSyncId(): Float? = realmDbManager.getSyncId()
+
+    fun setSyncId(syncId:Float) = realmDbManager.setSyncId(syncId)
 
     suspend fun mutate(payload: MutationPayload) {
         when (payload.operation) {

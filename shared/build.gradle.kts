@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.jetbrainsKotlinAndroid)
 
     id("kotlin-kapt")
+    id("io.realm.kotlin") version "1.16.0" apply true
 }
 
 android {
@@ -43,6 +44,8 @@ dependencies {
     api("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.2")
     api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
     api("androidx.security:security-crypto:1.1.0-alpha03")
+    api("io.realm.kotlin:library-base:1.16.0")
+    api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

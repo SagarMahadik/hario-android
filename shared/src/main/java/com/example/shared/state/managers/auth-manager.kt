@@ -6,7 +6,9 @@ import com.example.shared.api.FullBootstrapResult
 import com.example.shared.db.DbManager
 import com.example.shared.api.LoginPayload
 import com.example.shared.model.Collection
+import com.example.shared.model.Settings
 import com.example.shared.model.Tag
+import com.example.shared.model.User
 import com.example.shared.state.AppAction
 import com.example.shared.state.AppStore.store
 import kotlinx.coroutines.coroutineScope
@@ -80,8 +82,98 @@ object AuthManager {
                      store.dispatch(AppAction.SetTags(tags))
                 }
            }
+
+           launch {
+               dbManager.getSettings().collectLatest { settings: Settings? ->
+                   Log.d("Debug", "Settings loaded in coreData: $settings")
+                  settings?.let { store.dispatch(AppAction.SetSettings(it)) }
+               }
+           }
+
+           launch {
+               dbManager.getUser().collectLatest { user: User? ->
+                   Log.d("Debug", "User loaded in coreData: $user")
+                  user?.let { store.dispatch(AppAction.SetUser(it)) }
+               }
+           }
              Log.d("Debug", "loadCoreData completed")
        }
+    }
+
+    private suspend fun fullBootstrap() {
+        when (val fullBootstrapResult = apiManager.fullBootstrap()) {
+            is FullBootstrapResult.Success -> {
+                val bootstrapResponse = fullBootstrapResult.data
+                Log.d("Debug", "fullBootstrap successful. Response: $bootstrapResponse")
+
+                val collections = bootstrapResponse.data.collections.map { collectionData ->
+                    Collection(
+                        _id = collectionData._id,
+                        name = collectionData.name,
+                        parent = collectionData.parent,
+                        updatedAt = collectionData.updatedAt,
+                        userId = collectionData.userId,
+                        isFavorite = collectionData.isFavorite ?: false
+                    )
+                }
+
+                // Insert or update collections in the database
+                dbManager.collectionRepository.insertCollections(collections)
+
+                // Process tags
+                val tags = bootstrapResponse.data.tags.map { tagData ->
+                    Tag(
+                        _id = tagData._id,
+                        name = tagData.name,
+                        updatedAt = tagData.updatedAt,
+                        userId = tagData.userId,
+                        isFavorite = tagData.isFavorite,
+                        parent = tagData.parent
+                    )
+                }
+
+                // Insert or update tags in the database
+                dbManager.tagRepository.insertTags(tags)
+
+                try {
+                    coroutineScope {
+                        launch {
+                            loadCoreData()
+                        }
+                        launch {
+                            apiManager.streamData()
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("Error", "Error in background tasks: ${e.message}", e)
+                    // Handle the error as needed
+                }
+
+                // Add any other necessary processing for the bootstrap data
+                Log.d("Debug", "Bootstrap data processed successfully")
+            }
+            is FullBootstrapResult.Error -> {
+                val error = fullBootstrapResult.exception
+                Log.e("Error", "fullBootstrap error: ${error.message}", error)
+                // Handle bootstrap error here
+                // You might want to retry the operation or inform the user
+            }
+        }
+    }
+
+    private suspend fun deltaSync(lastSyncId: Int, currentSyncId: Int) {
+        loadCoreData()
+        when (val result = apiManager.deltaSync(lastSyncId, currentSyncId)) {
+            is ApiManager.DeltaSyncResult.Success -> {
+                val deltaSyncResponse = result.data
+                Log.d("delta-sync", "Delta sync response: $deltaSyncResponse")
+                dbManager.applyDeltaChanges(deltaSyncResponse.data.syncRecords)
+            }
+            is ApiManager.DeltaSyncResult.Error -> {
+                Log.e("Error", "Delta sync failed: ${result.exception.message}")
+                // Handle sync error
+            }
+        }
     }
 
     suspend fun startUpSequence(payload: Any) {
@@ -91,6 +183,40 @@ object AuthManager {
             is ApiManager.GetUserResult.Success -> {
                 val userResponse = getUserResult.data
                 Log.d("Debug", "getUser successful. Response: $userResponse")
+
+                val apiProfile = userResponse.data?.profile
+                val apiSettings = userResponse.data?.settings
+
+                // Save user profile to local database
+                apiProfile?.let { profile ->
+                    val user = User(
+                        _id = profile._id,
+                        email = profile.email,
+                        userId = profile.userId
+                    )
+                    dbManager.saveUser(user)
+                    Log.d("Debug", "User saved to local database")
+                }
+
+                // Save settings to local database
+                apiSettings?.let { settings ->
+                    val localSettings = Settings(
+                        _id = settings._id,
+                        dock = Settings.Dock(size = settings.dock.size),
+                        sidebar = Settings.Sidebar(
+                            position = settings.sidebar.position,
+                            size = settings.sidebar.size
+                        ),
+                        userId = settings.userId
+                    )
+                    dbManager.saveSettings(localSettings)
+                    Log.d("Debug", "Settings saved to local database")
+                }
+
+                val syncIdInServer = userResponse.data?.syncId
+                val syncIdInLocalDb = dbManager.getSyncId()
+
+                Log.d("SYNCID","syncId in localDB is : ${syncIdInLocalDb}")
 
                 val fullBootstrapResult = apiManager.fullBootstrap()
                 when (fullBootstrapResult) {

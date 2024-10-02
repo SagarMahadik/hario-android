@@ -44,6 +44,7 @@ import com.example.shared.db.MutationPayload
 import com.example.shared.db.repository.BookmarkRepository
 import com.example.shared.model.Bookmarks
 import com.example.shared.model.Collection
+import com.example.shared.model.User
 import com.example.shared.state.AppStore
 import com.example.shared.state.AppAction
 import com.example.shared.state.ActionType
@@ -128,61 +129,83 @@ class HomeFragment : Fragment() {
                     LoginScreen(
                     )
                 } else {
-                    CollectionList(
-                        collections = appState.value.collections,
-                        paddingValues = paddingValues
-                    )
+                    appState.value.user?.let {
+                        CollectionList(
+                            collections = appState.value.collections,
+                            user = it,
+                            paddingValues = paddingValues
+                        )
+                    }
                 }
             }
         )
     }
 
     @Composable
-    fun BookmarkList(
-        bookmarks: List<Bookmarks>,
-        onAddBookmark: () -> Unit,
-        onUpdateBookmark: () -> Unit,
-        paddingValues: PaddingValues
+    fun UserComponent(
+        user: User,
     ) {
-        Column(
-            modifier = Modifier.padding(paddingValues)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
-            // Display the list of bookmarks
-            bookmarks.forEach { bookmark ->
-                Text(text = "${bookmark.title}")
-                Text(text = "${bookmark.isFavorite}")
-            }
-
-            // Add Bookmark Button
-            Button(onClick = { onAddBookmark() }) {
-                Text(text = "Add Bookmark")
-            }
-
-            // Update Bookmark Button
-            Button(onClick = { onUpdateBookmark() }) {
-                Text(text = "Update Bookmark")
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(
+                    text = "User Profile",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "ID: ${user._id}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = "User ID: ${user.userId}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = "Updated At: ${user.updatedAt?.let { formatDate(it) } ?: "N/A"}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
+
 
 @Composable
 fun CollectionList(
     collections: List<Collection>,
     paddingValues: PaddingValues,
+    user: User,
 ) {
-    LazyColumn(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(paddingValues),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .padding(paddingValues)
     ) {
-        itemsIndexed(collections) { index,collection ->
-            CollectionCard(
-                collection = collection,
-                index=index
-//                onFavoriteToggle = print("toggled")
-            )
+        UserComponent(user = user)
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        LazyColumn(
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            itemsIndexed(collections) { index, collection ->
+                CollectionCard(
+                    collection = collection,
+                    index = index
+                    // onFavoriteToggle = print("toggled")
+                )
+            }
         }
     }
 }
