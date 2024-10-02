@@ -17,7 +17,7 @@ object RealmDbInitializer {
                 SidebarRealm::class,
                 SyncRealm::class
             )
-        ).schemaVersion(2).build()
+        ).schemaVersion(3).build()
         realm = Realm.open(config)
     }
 
@@ -56,5 +56,5 @@ class UserRealm : RealmObject {
 class SyncRealm : RealmObject {
     @PrimaryKey
     var _id: String = ""
-    var syncId: Float = 0f
+    var syncId: Int = 0
 }

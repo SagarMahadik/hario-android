@@ -54,7 +54,7 @@ class RealmDbManager {
             }
     }
 
-    fun setSyncId(syncId: Float) {
+    fun setSyncId(syncId: Int) {
         realm.writeBlocking {
             val existingSync = query<SyncRealm>().first().find()
             if (existingSync != null) {
@@ -69,7 +69,7 @@ class RealmDbManager {
         }
     }
 
-    fun getSyncId(): Float? {
+    fun getSyncId(): Int? {
         return realm.query<SyncRealm>().first().find()?.syncId
     }
 }

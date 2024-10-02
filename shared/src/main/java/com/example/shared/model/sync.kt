@@ -4,14 +4,14 @@ import com.example.shared.db.SyncRealm
 
 data class Sync(
     val _id: String,
-    val syncId:Float
+    val syncId:Int
 ) : UpdatableItem<Sync> {
 
     override fun update(data: Map<String, Any>): Sync {
         var updated = this
         data.forEach { (key, value) ->
             updated = when (key) {
-                "syncId" -> updated.copy(syncId = value as Float)
+                "syncId" -> updated.copy(syncId = value as Int)
                 else -> updated
             }
         }

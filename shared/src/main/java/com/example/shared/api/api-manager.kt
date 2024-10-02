@@ -180,7 +180,7 @@ class ApiManager private constructor() {
     data class UserData(
         val profile: User,
         val settings: Settings,
-        val syncId: Double
+        val syncId: Int
     )
 
     sealed class GetUserResult {
@@ -406,6 +406,7 @@ class ApiManager private constructor() {
 
                 // Call mutate function from dbManager
                 dbManager.mutate(mutationPayload)
+                dbManager.setSyncId(syncId.toInt())
                 println("Changes applied and syncId updated to $syncId")
             } catch (error: Exception) {
                 println("Error applying changes: ${error.message}")

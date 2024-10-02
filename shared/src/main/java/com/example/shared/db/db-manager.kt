@@ -83,9 +83,9 @@ class DbManager private constructor(context: Context) {
 
     fun getUser(): Flow<User?> = realmDbManager.getUserFlow()
 
-    fun getSyncId(): Float? = realmDbManager.getSyncId()
+    fun getSyncId(): Int? = realmDbManager.getSyncId()
 
-    fun setSyncId(syncId:Float) = realmDbManager.setSyncId(syncId)
+    fun setSyncId(syncId:Int) = realmDbManager.setSyncId(syncId)
 
     suspend fun mutate(payload: MutationPayload) {
         when (payload.operation) {

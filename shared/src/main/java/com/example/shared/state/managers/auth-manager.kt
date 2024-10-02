@@ -100,7 +100,7 @@ object AuthManager {
        }
     }
 
-    private suspend fun fullBootstrap() {
+    private suspend fun fullBootstrap(currentSyncId: Int) {
         when (val fullBootstrapResult = apiManager.fullBootstrap()) {
             is FullBootstrapResult.Success -> {
                 val bootstrapResponse = fullBootstrapResult.data
@@ -142,6 +142,10 @@ object AuthManager {
                         }
                         launch {
                             apiManager.streamData()
+                            dbManager.setSyncId(currentSyncId)
+                            apiManager.initEventStream().collectLatest {
+                                print(it)
+                            }
                         }
                     }
                 } catch (e: Exception) {
@@ -162,12 +166,18 @@ object AuthManager {
     }
 
     private suspend fun deltaSync(lastSyncId: Int, currentSyncId: Int) {
-        loadCoreData()
+
         when (val result = apiManager.deltaSync(lastSyncId, currentSyncId)) {
             is ApiManager.DeltaSyncResult.Success -> {
                 val deltaSyncResponse = result.data
                 Log.d("delta-sync", "Delta sync response: $deltaSyncResponse")
                 dbManager.applyDeltaChanges(deltaSyncResponse.data.syncRecords)
+
+                dbManager.setSyncId(currentSyncId)
+
+                apiManager.initEventStream().collectLatest {
+                    print(it)
+                }
             }
             is ApiManager.DeltaSyncResult.Error -> {
                 Log.e("Error", "Delta sync failed: ${result.exception.message}")
@@ -216,85 +226,46 @@ object AuthManager {
                 val syncIdInServer = userResponse.data?.syncId
                 val syncIdInLocalDb = dbManager.getSyncId()
 
-                Log.d("SYNCID","syncId in localDB is : ${syncIdInLocalDb}")
+                Log.d("SYNCID","syncId in serverDB is : $syncIdInServer")
+                Log.d("SYNCID", "syncId in localDB is : $syncIdInLocalDb")
 
-                val fullBootstrapResult = apiManager.fullBootstrap()
-                when (fullBootstrapResult) {
-                    is FullBootstrapResult.Success -> {
-                        val bootstrapResponse = fullBootstrapResult.data
-                        Log.d("Debug", "fullBootstrap successful. Response: $bootstrapResponse")
-
-                        // Extract collections from the bootstrap response
-                        val collections = bootstrapResponse.data.collections.map { collectionData ->
-                            Collection(
-                                _id = collectionData._id,
-                                name = collectionData.name,
-                                parent = collectionData.parent,
-                                updatedAt = collectionData.updatedAt,
-                                userId = collectionData.userId,
-                                isFavorite = collectionData.isFavorite ?: false
-                            )
+                when {
+                    syncIdInLocalDb == null -> {
+                        Log.d("Sync", "No syncId found, starting fullBootstrap")
+                        if (syncIdInServer != null) {
+                            fullBootstrap(syncIdInServer)
                         }
+                    }
 
-                        // Insert or update collections in the database
-                        dbManager.collectionRepository.insertCollections(collections)
-
-                        // Process tags
-                        val tags = bootstrapResponse.data.tags.map { tagData ->
-                            Tag(
-                                _id = tagData._id,
-                                name = tagData.name,
-                                updatedAt = tagData.updatedAt,
-                                userId = tagData.userId,
-                                isFavorite = tagData.isFavorite,
-                                parent = tagData.parent
-                            )
+                    syncIdInLocalDb == 0 -> {
+                        Log.d("Sync", "syncId 0 found, starting fullBootstrap")
+                        if (syncIdInServer != null) {
+                            fullBootstrap(syncIdInServer)
                         }
+                    }
 
-                        // Insert or update tags in the database
-                        dbManager.tagRepository.insertTags(tags)
-
-                        // Add any other necessary processing for the bootstrap data
-                        Log.d("Debug", "Bootstrap data processed successfully")
-
+                    syncIdInServer != null && syncIdInServer > syncIdInLocalDb -> {
+                        Log.d("Sync", "syncId found, it is less than server, start delta sync")
                         try {
                             coroutineScope {
                                 launch {
                                     loadCoreData()
                                 }
                                 launch {
-//                                    apiManager.streamData()
-
-                                    val lastSyncId = 467 // Get this from your local storage
-                                    val currentSyncId = 468 // This should be obtained from your server or business logic
-
-                                    when (val result = apiManager.deltaSync(lastSyncId, currentSyncId)) {
-                                        is ApiManager.DeltaSyncResult.Success -> {
-                                            val deltaSyncResponse = result.data
-                                            // Process the data here in your business logic
-                                            Log.d("delta-sync","Delta sync response:${deltaSyncResponse}")
-                                             dbManager.applyDeltaChanges(deltaSyncResponse.data.syncRecords)
-                                        }
-                                        is ApiManager.DeltaSyncResult.Error -> {
-                                            Log.e("Error", "Delta sync failed: ${result.exception.message}")
-                                            // Handle sync error
-                                        }
-                                    }
-                                    apiManager.initEventStream().collectLatest {
-                                        status -> print(status)
-                                    }
+                                    deltaSync(syncIdInLocalDb, syncIdInServer)
                                 }
                             }
                         } catch (e: Exception) {
-                            Log.e("Error", "Error loading core data: ${e.message}", e)
+                            Log.e("Error", "Error in background tasks: ${e.message}", e)
                             // Handle the error as needed
                         }
                     }
-                    is FullBootstrapResult.Error -> {
-                        val error = fullBootstrapResult.exception
-                        Log.e("Error", "fullBootstrap error: ${error.message}", error)
-                        // Handle bootstrap error here
-                        // You might want to retry the operation or inform the user
+                    else -> {
+                        Log.d("Sync", "No sync needed")
+                        loadCoreData()
+                        apiManager.initEventStream().collectLatest {
+                            print(it)
+                        }
                     }
                 }
             }
